@@ -1252,7 +1252,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (enableBranchPruning()) {
       const pruner = new BranchPruner(
         repository,
-        this.gitStoreCache,
         this.repositoriesStore,
         this.repositoryStateCache,
         repository => this._refreshRepository(repository),
