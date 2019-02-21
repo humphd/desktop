@@ -417,7 +417,6 @@ export interface IBranchesState {
    *
    * This can be configured in one of two ways by the user:
    *
-   *  - `git config branch.[name].rebase true` (local)
    *  - `git config pull.rebase true` (local or global)
    */
   readonly pullWithRebase?: boolean
