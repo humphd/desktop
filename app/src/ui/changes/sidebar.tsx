@@ -3,7 +3,11 @@ import * as React from 'react'
 
 import { ChangesList } from './changes-list'
 import { DiffSelectionType } from '../../models/diff'
-import { IChangesState } from '../../lib/app-state'
+import {
+  IChangesState,
+  RebaseConflictState,
+  isRebaseConflictState,
+} from '../../lib/app-state'
 import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { IGitHubUser } from '../../lib/databases'
@@ -339,12 +343,23 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
       user = this.props.gitHubUsers.get(email.toLowerCase()) || null
     }
 
+    let rebaseConflictState: RebaseConflictState | null = null
+    if (changesState.conflictState !== null) {
+      rebaseConflictState = isRebaseConflictState(changesState.conflictState)
+        ? changesState.conflictState
+        : null
+    }
+
+    const undoCommitComponent =
+      rebaseConflictState === null ? this.renderMostRecentLocalCommit() : null
+
     return (
       <div id="changes-sidebar-contents">
         <ChangesList
           dispatcher={this.props.dispatcher}
           repository={this.props.repository}
           workingDirectory={changesState.workingDirectory}
+          rebaseConflictState={rebaseConflictState}
           selectedFileIDs={selectedFileIDs}
           onFileSelectionChanged={this.onFileSelectionChanged}
           onCreateCommit={this.onCreateCommit}
@@ -373,7 +388,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           onChangesListScrolled={this.props.onChangesListScrolled}
           changesListScrollTop={this.props.changesListScrollTop}
         />
-        {this.renderMostRecentLocalCommit()}
+        {undoCommitComponent}
       </div>
     )
   }
