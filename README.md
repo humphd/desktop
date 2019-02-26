@@ -326,4 +326,81 @@ We can use this to add a condition to our breakpoint, and then we'll only hit it
 
 ![Conditional Breakpoint](screenshots/edit-breakpoint.png)
 
-With this change, our program runs normally, until we trigger the bug, at which point we're dropped into the debugger.
+With this change, our program runs normally, until start testing for the bug and commit our code, at which point we're dropped into the debugger. Our condition was met, which means the old code (1.4.3 before the bug) would have entered the `if` block here.  What happens in the new code?
+
+![Hitting our Conditional Breakpoint, first time](screenshots/hitting-conditional-breakpoint-1.png)
+
+In this case, the two objects are in fact different: 
+
+```
+prevProps.commitMessage =  { summary: "", description: "" }
+this.props.commitMessage = { summary: "hello", description: "" }
+```
+
+The new code enters the `if` block too, meaning that `!shallowEquals()` does the same thing as `!==`.  Let's click `Undo` and see if we can trigger the bug:  
+
+![Hitting our Conditional Breakpoint, second time](screenshots/hitting-conditional-breakpoint-2.png)
+
+In this case we have two objects with the same shape, keys, and values:
+
+```
+prevProps.commitMessage =  { summary: "hello", description: "" }
+this.props.commitMessage = { summary: "hello", description: "" }
+```
+
+Testing in the console we see that even though they look the same, they are in fact different objects (i.e., they don't refer to the same object).  In this second case `prevProps.commitMessage !== this.props.commitMessage` is `true`, since the two objects aren't the same (reference).  However, `!shallowEquals(prevProps.commitMessage, this.props.commitMessage)` returns `false`.
+
+According to the diff we've been reading, the code for `shallowEquals` is defined in [`app/src/lib/equality.ts`](app/src/lib/equality.ts):
+
+```ts
+/**
+ * Performs a shallow equality comparison on the two objects, iterating over
+ * their keys (non-recursively) and compares their values.
+ *
+ * This method is functionally identical to that of React's shallowCompare
+ * function and is intended to be used where we need to test for the same
+ * kind of equality comparisons that a PureComponent performs.
+ *
+ * Note that for Arrays and primitive types this method will follow the same
+ * semantics as Object.is, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+export function shallowEquals(x: any, y: any) {
+  if (Object.is(x, y)) {
+    return true
+  }
+
+  // After this we know that neither side is null or undefined
+  if (
+    x === null ||
+    y === null ||
+    typeof x !== 'object' ||
+    typeof y !== 'object'
+  ) {
+    return false
+  }
+
+  const xKeys = Object.keys(x)
+  const yKeys = Object.keys(y)
+
+  if (xKeys.length !== yKeys.length) {
+    return false
+  }
+
+  for (let i = 0; i < xKeys.length; i++) {
+    const key = xKeys[i]
+    if (
+      !Object.prototype.hasOwnProperty.call(y, key) ||
+      !Object.is(x[key], y[key])
+    ) {
+      return false
+    }
+  }
+
+  return true
+}
+```
+
+The `shallowEquals` function checks to see if two objects are the same (reference) (same as using `===`), OR if they share the same set of top-level keys and values.  This explains why `shallowEquals({ summary: "hello", description: "" }, { summary: "hello", description: "" })` would return `true`: they aren't the same object, but do have the same set of top-level key/values.
+
+Based on this it looks like our bug is the result of the old code relying on a check for reference equality only, and calling `setState()` for the case that the `props` object is changed, even if the values are the same.  Why would that matter? 
+
