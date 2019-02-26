@@ -4,8 +4,28 @@
   <img alt="GitHub Desktop" src="https://desktop.github.com/images/github-desktop-screenshot-mac.png">
 </p>
 
-Fixing a bug in a project the size of [GitHub Desktop](https://code.visualstudio.com/) might seem
-overwhelming at first. The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough of how one might solve a real bug. It is meant as
+## Introduction
+
+[GitHub Desktop](https://desktop.github.com/) is an open source [Electron](https://electron.atom.io)-based
+GitHub app. It is written in [TypeScript](http://www.typescriptlang.org) and
+uses [React](https://facebook.github.io/react/).
+
+Over the past few terms, I've had open source students fix bugs in the project, and each time been impressed with how the maintainers have treated these new contributors.  This also came up in a recent [interview with William Shepherd](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/), one of the GitHub Desktop maintainers: 
+
+> "My team is always open to receiving contributions. We are looking for kind people who are empathetic and have a collaborative mindset. We are open to all types of contributions, but we are very interested in getting more people from non-technical backgrounds involved. A few of the things that we’d love help with are"
+
+- Improvements to project documentation
+- Making the application more accessible
+- Assuring quality of the application
+- Improvements to our design
+- Identifying and reporting pain points in the application
+- Bug fixes
+
+As a result I decided to write my next bug fix walkthrough on GitHub Desktop, in order to help more of my students (and other developers) also get involved in the project.
+
+## Overview
+
+The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough of how one might solve a real bug. It is meant as
 a learning exercise for my open source students at Seneca, or anyone else that is
 interested in getting started fixing bugs in large projects. Other similar walkthroughs
 are available for [Microsoft VSCode](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#walkthrough-fixing-a-bug-in-visual-studio-code) and
@@ -53,13 +73,13 @@ also [documents their process](docs/process/issue-triage.md), and [discusses how
 At the time of writing, there are 2 issues marked `good first issue`, and 119 marked `help wanted`.
 Because there are only 2 with `good first issue`, I'm going to leave those for other, newer developers.  If you're reading this and you are in fact a new open source developer, I'd suggest you start with one of these.  However, for our current walkthough, let's focus on the `help wanted` label instead. 
 
-While examining the labels used in the project, I also noticed a number of other interesting ones:
+While examining the labels used in the project, I also noticed a number of other interesting possibilities:
 
 * [`priority-2`](https://github.com/desktop/desktop/labels/priority-2): Bug that affects more than a few users in a meaningful way but doesn't prevent core functions (17) 
 * [`priority-3`](github.com/desktop/desktop/labels/priority-3): Bugs that affect small number of users and/or relatively cosmetic in nature (116)
-* [`bug`](https://github.com/desktop/desktop/labels/bug): Confirmed bugs or reports that are very likely to be bugs” (126)
+* [`bug`](https://github.com/desktop/desktop/labels/bug): Confirmed bugs or reports that are very likely to be bugs (126)
 
-Each of these three labels points to issues that might be a good fit with my goal of finding and fixing a bug in the project.  First, the `priority-2` and `priority-3` point to issues that are important enough to want to fix, but not so critical that I'll be under pressure to make a fix (i.e., a maintainer would be better suited to the task).  Second, the `bug` label identifies issues that are confirmed bugs, and require me to inspect and debug existing code vs. write new code.  We're often excited at the idea of writing new features in a project, but I'd suggest that fixing small, existing bugs is a better place to begin.  Doing so will help you understand the code, project processes, and introduce you to the community.  After doing a few fixes, maybe you'll be ready to tackle a feature.
+Each of these three labels points to issues that might be a good fit with my goal of finding and fixing a bug in the project as a new contributor.  First, the `priority-2` and `priority-3` point to issues that are important enough to want to fix, but not so critical that I'll be under pressure to make a fix (i.e., a maintainer would be better suited to the task).  Second, the `bug` label identifies issues that are confirmed bugs, and require me to inspect and debug existing code vs. write new code.  We're often excited at the idea of writing new features in a project, but I'd suggest that fixing small, existing bugs is a better place to begin.  Doing so will help you understand the code, project processes, and introduce you to the community.  After doing a few fixes, maybe you'll be ready to tackle a feature.
 
 In addition to these, I also noticed a number of labels I’m actively going to avoid:
 
@@ -69,20 +89,19 @@ In addition to these, I also noticed a number of labels I’m actively going to 
 
 All of these labels point at things with time pressure demands, dependencies on work from other team members, etc. We'll be happier working on something smaller, and at a slower pace as we get familiar with the project, and these labels signal areas we probably want to avoid at first.
 
-Given everything we've learned above, we can look for potential issues using the following query::
+Given everything we've learned above, we can look for potential issues using the following query:
 
 https://github.com/desktop/desktop/issues?utf8=%E2%9C%93&q=is%3Aopen+label%3Abug+label%3A%22help+wanted%22
 
 At the time of writing, this returned 43 issues possible issues.  Of these, all but one was a `priority-2` or `priority-3`, which is perfect.  We can further narrow this down by [searching for issues with no one assigned](https://help.github.com/en/articles/searching-issues-and-pull-requests#search-by-missing-metadata) (i.e., `no:assignee`), which returns this issue:
 
-https://github.com/desktop/desktop/issues/6390 - Clicking "Undo button doesn't populate summary field
+https://github.com/desktop/desktop/issues/6390 - **Clicking "Undo" button doesn't populate summary field**
 
 Let's try to figure out what is causing this bug.
 
 ## Reproducing the Bug
 
-Fixing this bug is going to be easiest if we can reproduce it locally.  While this isn't always possible, when
-it is, the process of debugging is greatly accelerated.  Let's see if we can reproduce it in our own build.
+Fixing this bug is going to be easiest if we can reproduce it locally.  First, the bug may not exist anymore (maybe it was fixed and the issue never closed?)  If it does still exist, the process of debugging it will be greatly accelerated if we can reproduce it on our own computer.  Let's see if we can reproduce it in our own build.
 
 The person who filed the bug left some important clues:
 
@@ -99,31 +118,33 @@ Further down in the issue's comments, [one of the maintainers suggests](https://
 1. Click Undo, notice state of the Summary input field (should be `hello` again)
 1. Repeat previous commit/undo steps, noticing Summary input field after each Undo (should be `hello`)
 
-These are exactly what we need, replacing the seemingly random behaviour into a simple manual test we can try.  After we build and run our local version of the app, we can clearly see the bug in action:
+These are exactly what we need, replacing the seemingly random behaviour with a simple manual test we can try ourselves.  After we build and run our local version of the app, we can clearly see the bug in action:
 
 ![Reproducing the bug locally](screenshots/reproduce-bug.gif)
 
+> NOTE: I've created a new, mostly empty repository (`git init`) with a `README.md` file, and opened that in the app for testing.
+
 ## Finding the Related Code
 
-Now that we can successfully recreate the bug, it's time to try and locate the code that causes the issue. Where to begin? GitHub Desktop is a large program ([~160K lines of code written by 154 people](https://www.openhub.net/p/github-desktop)), and we don't (yet) know the code.  Should we dive in and just try to figure out where the code controlling this part of the app lives?  We could, and that's often your only option. However, in this case we have another tool available to us.
+Now that we can successfully recreate the bug, it's time to try and locate the code that causes the issue. Where to begin? GitHub Desktop is a large program ([~160K lines of code written by 154 people](https://www.openhub.net/p/github-desktop)), and we don't (yet) know the code.  Should we dive in and just try to figure out where the code controlling this part of the app lives?  We could, and this was our strategy in the [VSCode walkthrough](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#finding-the-related-code). However, in this case we have another tool available to us in the form of `git bisect`.
 
 ### Finding a Regression Window
 
-Recall that the issue we're examining includes this:
+Recall that the original issue filed includes this bit of information:
 
 > Before, whenever I clicked the "Undo" button to undo a commit, the summary and description fields get populated with the description of that commit. But now, they don't always get populated.
 
 Our bug is one where things used to work properly, and have now started failing intermittently.  We often refer to such a bug as a [*regression*](https://en.wikipedia.org/wiki/Software_regression), because our program has *regressed* (gone backwards) in functionality instead of *progressing*.
 
-In cases where code in a git repository has regressed, we can try using [`git bisect`](https://git-scm.com/book/en/v2/Git-Tools-Debugging-with-Git) to automate search through old commits in order to find the cause of our bug (i.e., the commit).
+In cases where code in a git repository has regressed, we can try using [`git bisect`](https://git-scm.com/book/en/v2/Git-Tools-Debugging-with-Git) to automate searching through old commits in order to find the cause of our bug (i.e., the commit).
 
-The concept is simple: things no longer work as expected, therefore, some change to the code must have broken things.  In the case of git, every change is a commit, and git knows about all 20K+ commits in the GitHub Desktop repository.  One of them introduced a change we need to correct.  But which one?
+The concept is simple: our program no longer works as expected, and so we assume that some change to the code must have broken things.  In the case of git, every change is a commit, and git knows about all 20K+ commits in the GitHub Desktop repository.  One of them introduced a change we need to correct.  But which one?
 
 To answer this question, we're going to have to begin by finding a *regression window*: two points in time that represent a) the code working as expected; and b) the code failing.
 
 We already have two known failing commits: our current position, and also the released version 1.5.0, which the bug reporter says he was using.  The set of [release tags associated with the project](https://github.com/desktop/desktop/releases) is a useful way to find our regression window.
 
-The [1.5.0](https://github.com/desktop/desktop/releases/tag/release-1.5.0) release happened on Nov 13, 2018, and represents the first "failed" commit.  The bug reporter said that things worked in a previous release, and the last major release before 1.5.0 was [1.4.3](https://github.com/desktop/desktop/releases/tag/release-1.4.3) on Oct 18, 2018.  When searching for the last-known-good commit in a regression window, don't worry too much about staying close to the failed commit: the bug might have been introduced a day, week, month, or year ago.  We can't tell at this point.  We'll let `git bisect` help us quickly jump across these commits.
+The [1.5.0](https://github.com/desktop/desktop/releases/tag/release-1.5.0) release happened on Nov 13, 2018, and represents a known "failing" commit.  The bug reporter said that things worked in a previous release, and the last major release before 1.5.0 was [1.4.3](https://github.com/desktop/desktop/releases/tag/release-1.4.3) on Oct 18, 2018.  When searching for the last-known-good commit in a regression window, don't worry too much about staying close to the failed commit: the bug might have been introduced a day, week, month, or year ago.  We can't tell at this point.  We'll let `git bisect` help us quickly jump across these commits.
 
 Let's see if version 1.4.3 has this bug.  To do that, we need to checkout the code from that release, rebuild, and test for our bug:
 
@@ -136,11 +157,11 @@ $ yarn start
 
 ![Bug is fixed](screenshots/bug-fixed.gif)
 
-It looks like version 1.4.3 did not have the bug, and sometime between 1.4.3 and 1.5.0 it got introduced.  We have our regression window, and can now use `git bisect`.
+It looks like version 1.4.3 did not have the bug.  This means that at some point between release 1.4.3 and 1.5.0 it was introduced.  Now we have our regression window, and can use `git bisect` to find the commit responsible for the bug.
 
 ### Using `git bisect` to Debug
 
-Armed with a start and end range in git, we can begin the work of figuring out which commit introduced the bug.  In our regression range there were 26 days and 601 commits, with [~90K lines of code changed in 272 files (78,835 additions and 90,732 deletions)](https://github.com/desktop/desktop/compare/release-1.4.3...release-1.5.0).  That's way too much code to go through manually.
+Armed with a start and end range in git, we can begin the work of figuring out which commit introduced the bug.  In our regression range there are 26 days and 601 commits, with [~90K lines of code changed in 272 files (78,835 additions and 90,732 deletions)](https://github.com/desktop/desktop/compare/release-1.4.3...release-1.5.0).  That's way too much code to go through manually!
 
 Instead, we'll get git to do a binary search through these commits to find the first bad one.  We should first point out that git doesn't understand our code.  It doesn't know the difference between a good or bad commit.  We'll have to help it assess whether a commit is good or bad as we do the search, but git can greatly help us by skipping past huge numbers of commits.
 
@@ -167,10 +188,24 @@ Bisecting: 318 revisions left to test after this (roughly 8 steps)
 [8e3dbb0262fc9dd420ea1843ec9d63600dd988f4] Merge branch 'clearer-actions' of https://github.com/desktop/desktop into clearer-actions
 ```
 
-Here git checks out the `8e3dbb0262fc9dd420ea1843ec9d63600dd988f4` commit, and tells us that there are 318 commits after this to test, which will be done within ~8 repetitions of this process.  We need to re-install our dependencies (they might be different for each commit), re-build the code, run the app and try to reproduce the bug manually.  If we find the bug we mark the commit as bad (`git bisect bad`), otherwise good (`git bisect good`).  Based on our answer, git will divide what's left in half and ask us repeat the process, until it lands on the first commit to introduce the bug.
+Here git checks out the mid-point commit (`8e3dbb0262fc9dd420ea1843ec9d63600dd988f4`) in our regression range, and tells us that there are 318 commits (about half) after this to test, which will be done within ~8 repetitions of this process.  Each time we switch commits during the bisect, we'll need to re-install our dependencies (they might be different for each commit), re-build the code, run the app, and then try to reproduce the bug manually.
+
+If our manual test surfaces the bug we mark the commit as "bad" (`git bisect bad`), otherwise "good" (`git bisect good`).  Based on our answer, git will divide what's left in half and ask us repeat the process, until it lands on the first commit to introduce the bug.
+
+The process will look something like this:
+
+```
+...
+$ git bisect good
+$ yarn && yarn build:dev && yarn start
+$ git bisect bad
+$ yarn && yarn build:dev && yarn start
+...
+```
 
 <details>
-<summary>A slightly annotated log of the entire process is available here.</summary>
+<summary>If you're interested in the full log, a slightly annotated version of the entire process is available here.</summary>
+<pre>
 Bisecting: 318 revisions left to test after this (roughly 8 steps)
 [8e3dbb0262fc9dd420ea1843ec9d63600dd988f4] Merge branch 'clearer-actions' of https://github.com/desktop/desktop into clearer-actions
 
@@ -218,11 +253,12 @@ Date:   Wed Oct 31 09:32:08 2018 -0700
     use shallowEquals
 
 :040000 040000 a48c9be60a35ddd83f7783fdfdd024139631ea9b f49d66e116a9a59162d89f865c6086895bc2cc0a M	app
+</pre>
 </details>
 
 In the end, the process took 10 steps and ended on commit [6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61) from Oct 31, 2018.
 
-We can exit out of our bisect session and return to our original commit/branch:
+Now we can exit our bisect session and return to our original branch:
 
 ```
 $ git bisect reset
@@ -240,7 +276,7 @@ Third, we learn which [Pull Request this was part of: 6037](https://github.com/d
 
 ## Debugging using DevTools
 
-At this point we have enough information to move on to the next phase of our work.  We've determined that the change in ... introduced the bug, and reading the diff in that commit it's clear that [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx) and `componentDidUpdate()` are involved:
+At this point we have enough information to move on to the next phase of our work.  We've determined that the change in [6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61) introduced the bug, and reading the diff in that commit it's clear that [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx) and `componentDidUpdate()` are involved:
 
 ```diff
 @@ -22,6 +22,7 @@ import { Octicon, OcticonSymbol } from '../octicons'
@@ -271,17 +307,9 @@ At this point we have enough information to move on to the next phase of our wor
   }
 ```
 
-A switch has been made from using `!==` to `shallowEquals()`.  This `if` check seems to guard access to the commit's `summary` and `description` state being updated.  It would be interesting to observe this happening in the debugger when it failed.
-
-Since we're interested in trying to fix the bug, we'll switch back to the most current version
+A switch has been made from using `!==` to `shallowEquals()` when comparing various [`props` objects](https://reactjs.org/docs/components-and-props.html).  This `if` check seems to guard access to the `commitMessage`'s `summary` and `description` state being updated.  It would be interesting to observe this happening in the debugger when it fails.  Why does comparing with `!==` work, and `!shallowEquals()` fail?  Is this a bug in `shallowEquals`?
 
 We can use the [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/) to debug our app, as [discussed in the docs](https://github.com/desktop/desktop/blob/development/docs/contributing/setup.md#debugging).  After running our app, in the DevTools we can switch to the `Sources` tab and then use `Ctrl+p`/`Cmd+p` to find the [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx) file and our `shallowEquals()` check on line 140. 
 
 ![Setting a breakpoint](screenshots/setting-breakpoint.png)
-
-########################################################
-
-GitHub Desktop is an open source [Electron](https://electron.atom.io)-based
-GitHub app. It is written in [TypeScript](http://www.typescriptlang.org) and
-uses [React](https://facebook.github.io/react/).
 
