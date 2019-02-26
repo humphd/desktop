@@ -313,3 +313,17 @@ We can use the [Chrome DevTools](https://developers.google.com/web/tools/chrome-
 
 ![Setting a breakpoint](screenshots/setting-breakpoint.png)
 
+Attempting to run the app now, with this breakpoint added, is impossible.  The breakpoint is constantly being hit, and typing is impossible.  We need a [conditional breakpoint](https://developers.google.com/web/tools/chrome-devtools/javascript/breakpoints#conditional-loc), which only gets hit in very specific circumstances.
+
+To reduce the number of times our breakpoint gets hit, we can add an expression that evaluates to a boolean: if `true` the breakpoint will be hit; if `false` it will be ignored.  We already have a good candidate for a boolean expression:
+
+```ts
+prevProps.commitMessage !== this.props.commitMessage
+```
+
+Our working theory is that somehow the old check (using `!==`) is getting hit when the new `!shallowEquals(...)` is not.
+We can use this to add a condition to our breakpoint, and then we'll only hit it when the two differ:
+
+![Conditional Breakpoint](screenshots/edit-breakpoint.png)
+
+With this change, our program runs normally, until we trigger the bug, at which point we're dropped into the debugger.
