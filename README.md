@@ -4,6 +4,16 @@
   <img alt="GitHub Desktop" src="https://desktop.github.com/images/github-desktop-screenshot-mac.png">
 </p>
 
+## Overview
+
+The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough of how one might solve a real bug. It is meant as
+a learning exercise for my open source students at Seneca, or anyone else that is
+interested in getting started fixing bugs in large projects.
+
+Other similar walkthroughs
+are available for [Microsoft VSCode](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#walkthrough-fixing-a-bug-in-visual-studio-code) and
+the [Brave desktop web browser](https://github.com/humphd/browser-laptop/tree/good-first-experience-issue-10554#walkthrough-fixing-a-bug-in-the-brave-browser).
+
 ## Introduction
 
 [GitHub Desktop](https://desktop.github.com/) is an open source [Electron](https://electron.atom.io)-based
@@ -13,23 +23,15 @@ uses [React](https://facebook.github.io/react/).
 Over the past few terms, I've had open source students fix bugs in the project, and each time been impressed with how the maintainers have treated these new contributors.  This also came up in a recent [interview with William Shepherd](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/), one of the GitHub Desktop maintainers: 
 
 > "My team is always open to receiving contributions. We are looking for kind people who are empathetic and have a collaborative mindset. We are open to all types of contributions, but we are very interested in getting more people from non-technical backgrounds involved. A few of the things that we’d love help with are"
-
-- Improvements to project documentation
-- Making the application more accessible
-- Assuring quality of the application
-- Improvements to our design
-- Identifying and reporting pain points in the application
-- Bug fixes
+>
+>- Improvements to project documentation
+>- Making the application more accessible
+>- Assuring quality of the application
+>- Improvements to our design
+>- Identifying and reporting pain points in the application
+>- Bug fixes
 
 As a result I decided to write my next bug fix walkthrough on GitHub Desktop, in order to help more of my students (and other developers) also get involved in the project.
-
-## Overview
-
-The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough of how one might solve a real bug. It is meant as
-a learning exercise for my open source students at Seneca, or anyone else that is
-interested in getting started fixing bugs in large projects. Other similar walkthroughs
-are available for [Microsoft VSCode](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#walkthrough-fixing-a-bug-in-visual-studio-code) and
-the [Brave desktop web browser](https://github.com/humphd/browser-laptop/tree/good-first-experience-issue-10554#walkthrough-fixing-a-bug-in-the-brave-browser).
 
 During this walkthrough we will discuss and/or do the following:
 
@@ -79,7 +81,11 @@ While examining the labels used in the project, I also noticed a number of other
 * [`priority-3`](github.com/desktop/desktop/labels/priority-3): Bugs that affect small number of users and/or relatively cosmetic in nature (116)
 * [`bug`](https://github.com/desktop/desktop/labels/bug): Confirmed bugs or reports that are very likely to be bugs (126)
 
-Each of these three labels points to issues that might be a good fit with my goal of finding and fixing a bug in the project as a new contributor.  First, the `priority-2` and `priority-3` point to issues that are important enough to want to fix, but not so critical that I'll be under pressure to make a fix (i.e., a maintainer would be better suited to the task).  Second, the `bug` label identifies issues that are confirmed bugs, and require me to inspect and debug existing code vs. write new code.  We're often excited at the idea of writing new features in a project, but I'd suggest that fixing small, existing bugs is a better place to begin.  Doing so will help you understand the code, project processes, and introduce you to the community.  After doing a few fixes, maybe you'll be ready to tackle a feature.
+Each of these three labels points to issues that might be a good fit with my goal of finding and fixing a bug in the project as a new contributor.
+
+First, the `priority-2` and `priority-3` point to issues that are important enough to want to fix, but not so critical that I'll be under pressure to make a fix (i.e., a maintainer would be better suited to the task).
+
+Second, the `bug` label identifies issues that are confirmed bugs, and require me to inspect and debug existing code vs. write new code.  We're often excited at the idea of writing new features in a project, but I'd suggest that fixing small, existing bugs is a better place to begin.  Doing so will help you understand the code, project processes, and introduce you to the community.  After doing a few fixes, maybe you'll be ready to tackle a feature.
 
 In addition to these, I also noticed a number of labels I’m actively going to avoid:
 
@@ -93,7 +99,7 @@ Given everything we've learned above, we can look for potential issues using the
 
 https://github.com/desktop/desktop/issues?utf8=%E2%9C%93&q=is%3Aopen+label%3Abug+label%3A%22help+wanted%22
 
-At the time of writing, this returned 43 issues possible issues.  Of these, all but one was a `priority-2` or `priority-3`, which is perfect.  We can further narrow this down by [searching for issues with no one assigned](https://help.github.com/en/articles/searching-issues-and-pull-requests#search-by-missing-metadata) (i.e., `no:assignee`), which returns this issue:
+At the time of writing, this returned 43 possible issues.  Of these, all but one was a `priority-2` or `priority-3`, which is perfect.  We can further narrow this down by [searching for issues with no one assigned](https://help.github.com/en/articles/searching-issues-and-pull-requests#search-by-missing-metadata) (i.e., `no:assignee`), which returns this issue:
 
 https://github.com/desktop/desktop/issues/6390 - **Clicking "Undo" button doesn't populate summary field**
 
