@@ -211,7 +211,7 @@ $ yarn && yarn build:dev && yarn start
 ...
 ```
 
-<details>
+<div><details>
 <summary>If you're interested in the full log, a slightly annotated version of the entire process is available here.</summary>
 <pre>
 Bisecting: 318 revisions left to test after this (roughly 8 steps)
@@ -262,8 +262,7 @@ Date:   Wed Oct 31 09:32:08 2018 -0700
 
 :040000 040000 a48c9be60a35ddd83f7783fdfdd024139631ea9b f49d66e116a9a59162d89f865c6086895bc2cc0a M	app
 </pre>
-</details>
-
+</details></div>
 
 In the end, the process took 10 steps and ended on commit [6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61) from Oct 31, 2018.
 
