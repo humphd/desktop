@@ -20,7 +20,7 @@ the [Brave desktop web browser](https://github.com/humphd/browser-laptop/tree/go
 GitHub app. It is written in [TypeScript](http://www.typescriptlang.org) and
 uses [React](https://facebook.github.io/react/).
 
-Over the past few terms, I've had open source students fix bugs in the project, and each time been impressed with how the maintainers have treated these new contributors.  This also came up in a recent [interview with William Shepherd](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/), one of the GitHub Desktop maintainers: 
+Over the past few terms, I've had open source students fix bugs in GitHub Desktop, and each time been impressed with how the maintainers treat these new contributors.  I was also impressed with a recent [interview with William Shepherd](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/), one of the GitHub Desktop maintainers: 
 
 > "My team is always open to receiving contributions. We are looking for kind people who are empathetic and have a collaborative mindset. We are open to all types of contributions, but we are very interested in getting more people from non-technical backgrounds involved. A few of the things that we’d love help with are"
 >
@@ -31,13 +31,15 @@ Over the past few terms, I've had open source students fix bugs in the project, 
 >- Identifying and reporting pain points in the application
 >- Bug fixes
 
-As a result I decided to write my next bug fix walkthrough on GitHub Desktop, in order to help more of my students (and other developers) also get involved in the project.
+As a result I decided to base my next open source bug fix walkthrough on GitHub Desktop, in order to help more of my students (and other developers) also get involved in the project.
 
-During this walkthrough we will discuss and/or do the following:
+## Goals
 
-* Find a suitable bug to work on in GitHub Desktop
-* Reproduce the bug in our own build
-* Use `git bisect` to determine when the bug was introduced
+During this walkthrough we will discuss the following:
+
+* How to find a suitable bug to work on in GitHub Desktop
+* How to reproduce the bug in our own build
+* Using `git bisect` to find a regression window for our bug
 * Use the Chrome DevTools to debug and understand the code
 * Experiment with a possible fix for the bug
 * Work with the GitHub maintainers to find an optimal solution 
@@ -55,7 +57,7 @@ git checkout good-first-experience-issue-6390
 Next, spend some time reading [CONTRIBUTING.md](.github/CONTRIBUTING.md) and the project's extensive
 [developer documentation](docs). Pay special attention to the information on [setup, building, and debugging](docs/contributing/setup.md).
 
-The remainder of this walkthrough assumes that you know how to do the following:
+The remainder of this walkthrough assumes that you have read the docs above, and know how to build and run the code.  The project uses [yarn](https://yarnpkg.com/en/docs/getting-started) to manage dependencies and run build scripts, specifically:
 
 * install dependencies using `yarn`
 * build the app using `yarn build:dev`
@@ -63,11 +65,11 @@ The remainder of this walkthrough assumes that you know how to do the following:
 
 ## Finding a Bug
 
-At the time of writing, there are [510 open issues](https://github.com/desktop/desktop/issues) in the GitHub Desktop repo. Finding a bug to start with can be hard.  Let's begin by narrowing things down, using the project's extensive set of [Labels](https://github.com/desktop/desktop/labels).
+At the time of writing, there are [510 open issues](https://github.com/desktop/desktop/issues) in the GitHub Desktop repo. Finding your first bug can seem hard.  What if you aren't an expert in the technologies, languages, or tools being used?  What if you don't understand all the code?
 
-Not all projects triage their issues using labels.  Those that do give us some useful clues about how to
-navigate through the list of open bugs, feature requests, etc.  GitHub Desktop not only uses labels, but
-also [documents their process](docs/process/issue-triage.md), and [discusses how to interpret the set of labels in use](docs/process/labels.md).  According to these docs, [some of the labels we might want to consider include](docs/process/labels.md#external-contributions):
+In this walkthrough I'm going to intentionally work on a bug in an area of code that that I don't fully understand (front-end React).  We'll see how far we can get with imperfect knowledge of the code, and hopefully build some confidence along the way. 
+
+Let's begin by narrowing things down, using the project's extensive set of [labels](https://github.com/desktop/desktop/labels).  Not all projects triage their issues using labels.  Those that do give us some useful clues about how to navigate through the list of open bugs, feature requests, etc.  GitHub Desktop not only uses labels, but also [documents their process](docs/process/issue-triage.md), and [discusses how to interpret the set of labels in use](docs/process/labels.md).  According to these docs, [some of the labels we might want to consider include](docs/process/labels.md#external-contributions):
 
 * [`good first issue`](https://github.com/desktop/desktop/labels/good%20first%20issue)
 * [`help wanted`](https://github.com/desktop/desktop/labels/help%20wanted)
@@ -144,11 +146,11 @@ Our bug is one where things used to work properly, and have now started failing 
 
 In cases where code in a git repository has regressed, we can try using [`git bisect`](https://git-scm.com/book/en/v2/Git-Tools-Debugging-with-Git) to automate searching through old commits in order to find the cause of our bug (i.e., the commit).
 
-The concept is simple: our program no longer works as expected, and so we assume that some change to the code must have broken things.  In the case of git, every change is a commit, and git knows about all 20K+ commits in the GitHub Desktop repository.  One of them introduced a change we need to correct.  But which one?
+With a regression, our assumption is as follows: our program used to work, but now fails in some new way.  We assume that some change to the code must have introduced the failing behaviour.  In the case of git, every change is a commit, and git knows about all [20K+ commits in the GitHub Desktop repository](https://github.com/desktop/desktop/commits/development).  One of them introduced a change we need to correct.  But which one?
 
-To answer this question, we're going to have to begin by finding a *regression window*: two points in time that represent a) the code working as expected; and b) the code failing.
+To answer this question, we're going to have to begin by finding a *regression window*, that is, two points in time (i.e., two commits) that represent a) the code working as expected; and b) the code failing.
 
-We already have two known failing commits: our current position, and also the released version 1.5.0, which the bug reporter says he was using.  The set of [release tags associated with the project](https://github.com/desktop/desktop/releases) is a useful way to find our regression window.
+We already have two known failing commits: our current position, and also the released version 1.5.0, which the bug reporter says he was using.  The set of [release tags associated with the project](https://github.com/desktop/desktop/releases) is a useful way to hunt for our regression window.
 
 The [1.5.0](https://github.com/desktop/desktop/releases/tag/release-1.5.0) release happened on Nov 13, 2018, and represents a known "failing" commit.  The bug reporter said that things worked in a previous release, and the last major release before 1.5.0 was [1.4.3](https://github.com/desktop/desktop/releases/tag/release-1.4.3) on Oct 18, 2018.  When searching for the last-known-good commit in a regression window, don't worry too much about staying close to the failed commit: the bug might have been introduced a day, week, month, or year ago.  We can't tell at this point.  We'll let `git bisect` help us quickly jump across these commits.
 
@@ -194,9 +196,9 @@ Bisecting: 318 revisions left to test after this (roughly 8 steps)
 [8e3dbb0262fc9dd420ea1843ec9d63600dd988f4] Merge branch 'clearer-actions' of https://github.com/desktop/desktop into clearer-actions
 ```
 
-Here git checks out the mid-point commit (`8e3dbb0262fc9dd420ea1843ec9d63600dd988f4`) in our regression range, and tells us that there are 318 commits (about half) after this to test, which will be done within ~8 repetitions of this process.  Each time we switch commits during the bisect, we'll need to re-install our dependencies (they might be different for each commit), re-build the code, run the app, and then try to reproduce the bug manually.
+Here git checks out the mid-point commit (`8e3dbb0262fc9dd420ea1843ec9d63600dd988f4` from Tues Oct 30, 2018) in our regression range, and tells us that there are 318 commits (about half) after this to test, which will be done within ~8 repetitions of this process.  Each time we switch commits during the bisect, we'll need to re-install our dependencies (they might be different for each commit), re-build the code, run the app, and then try to reproduce the bug manually.
 
-If our manual test surfaces the bug we mark the commit as "bad" (`git bisect bad`), otherwise "good" (`git bisect good`).  Based on our answer, git will divide what's left in half and ask us repeat the process, until it lands on the first commit to introduce the bug.
+If our manual test surfaces the bug we mark the commit as "bad" (`git bisect bad`), otherwise "good" (`git bisect good`).  Based on our answer, git will divide what's left in half and ask us to repeat the process, until it lands on the first commit to introduce the bug.
 
 The process will look something like this:
 
@@ -262,6 +264,7 @@ Date:   Wed Oct 31 09:32:08 2018 -0700
 </pre>
 </details>
 
+
 In the end, the process took 10 steps and ended on commit [6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61) from Oct 31, 2018.
 
 Now we can exit our bisect session and return to our original branch:
@@ -272,11 +275,11 @@ $ git bisect reset
 
 ### Understanding a breaking change
 
-Having determined the first bad commit, we can now try to glean some information that might help us in fixing the bug.  What can we learn from this commit?
+Having determined the first bad commit, we can now try to glean some information that might help us in fixing the bug.  What can we learn from [this commit](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61)?
 
-First we learn who was involved in making the change.  This is useful because it gives us the name/email of a person to whom we could talk.  Maybe our research is done now, and we want to make this person aware of what we discovered.  Or maybe as we start working on a fix, we’ll have questions. Finally, we might want a review, and this is someone who knows the code.
+First we learn who was involved in making the change.  This is useful because it gives us the name/email of a person from the project.  In open source, code is important, but people more so, and understanding who we could talk to as we do our work is important.  Maybe our research is done now, and we want to make this person aware of what we discovered.  Or maybe as we start working on a fix, we’ll have questions. Finally, we might want a review, and this is someone who knows the code.
 
-Second, we learn which file(s), and line(s) of code are involved.  In this case the [change is quite small](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61#diff-89f50300b76ac999f8cf40ef627bfe27R).  Also, the relationship between our bug and the code is quite high.  That’s good, since it might mean we can fix it.  If the change had been part of a massive refactor of the code, we might decide to let someone else work on this.  This process should also help to underscore the value of making small commits, since smaller commits mean that it's easier to trace back to the introduction of a bug.
+Second, we learn which file(s), and line(s) of code are involved.  In this case the [change is quite small](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61#diff-89f50300b76ac999f8cf40ef627bfe27R).  Also, the relationship between our bug and the code is quite high.  The changes all occur in the [`app/src/ui/changes/commit-message.tsx`](https://github.com/desktop/desktop/blob/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61/app/src/ui/changes/commit-message.tsx) file, which is a [React component](https://reactjs.org/docs/react-component.html) for the commit message UI.  Because this change is small, it might mean we can fix it without too much work.  If the change had been part of a massive refactor of the code, we might decide to let someone else work on this.  This process should also help to underscore the value of making small commits, since smaller commits mean that it's easier to trace back to the introduction of a bug.
 
 Third, we learn which [Pull Request this was part of: 6037](https://github.com/desktop/desktop/pull/6037).  This is one small change (commit) in a larger change ([11 commits](https://github.com/desktop/desktop/pull/6037/commits)).  By connecting back to a PR, we also get access to even more people who know this code, in particular the reviewer.  We also have discussion of what the PR is about, as well as associated Issues: [#6049](https://github.com/desktop/desktop/issues/6049) and [#6013](https://github.com/desktop/desktop/pull/6013).  All of this together provides an excellent set of background reading, which we can use to inform our work in understanding the cause of the bug.
 
@@ -317,9 +320,11 @@ A switch has been made from using `!==` to `shallowEquals()` when comparing vari
 
 We can use the [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/) to debug our app, as [discussed in the docs](https://github.com/desktop/desktop/blob/development/docs/contributing/setup.md#debugging).  After running our app, in the DevTools we can switch to the `Sources` tab and then use `Ctrl+p`/`Cmd+p` to find the [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx) file and our `shallowEquals()` check on line 140. 
 
+Having found our file and line of code, we can set a [breakpoint](https://developers.google.com/web/tools/chrome-devtools/javascript/breakpoints):
+
 ![Setting a breakpoint](screenshots/setting-breakpoint.png)
 
-Attempting to run the app now, with this breakpoint added, is impossible.  The breakpoint is constantly being hit, and typing is impossible.  We need a [conditional breakpoint](https://developers.google.com/web/tools/chrome-devtools/javascript/breakpoints#conditional-loc), which only gets hit in very specific circumstances.
+Attempting to run the app now, with this breakpoint added, is difficult.  The breakpoint is constantly being hit, and typing is now impossible.  We're going to need to switch to a [conditional breakpoint](https://developers.google.com/web/tools/chrome-devtools/javascript/breakpoints#conditional-loc), which only gets hit in very specific circumstances.
 
 To reduce the number of times our breakpoint gets hit, we can add an expression that evaluates to a boolean: if `true` the breakpoint will be hit; if `false` it will be ignored.  We already have a good candidate for a boolean expression:
 
@@ -327,12 +332,11 @@ To reduce the number of times our breakpoint gets hit, we can add an expression 
 prevProps.commitMessage !== this.props.commitMessage
 ```
 
-Our working theory is that somehow the old check (using `!==`) is getting hit when the new `!shallowEquals(...)` is not.
-We can use this to add a condition to our breakpoint, and then we'll only hit it when the two differ:
+Our working theory is that somehow the old `if` check (using `!==`) was getting hit, while the new `!shallowEquals(...)` is not. We can use this to add a condition to our breakpoint, and then we'll only hit it when the two differ.  Right-click your breakpoint and click `Edit breakpoint...` or `Add conditional breakpoint...` if you haven't got one yet.  In the breakpoint expression, enter `prevProps.commitMessage !== this.props.commitMessage`:
 
 ![Conditional Breakpoint](screenshots/edit-breakpoint.png)
 
-With this change, our program runs normally, until start testing for the bug and commit our code, at which point we're dropped into the debugger. Our condition was met, which means the old code (1.4.3 before the bug) would have entered the `if` block here.  What happens in the new code?
+With this change, our program runs normally, until we start testing for the bug and commit our code, at which point we're dropped into the debugger. Our condition was met, which means the old code (1.4.3 before the bug) would have entered the `if` block here.  What happens in the new code?
 
 ![Hitting our Conditional Breakpoint, first time](screenshots/hitting-conditional-breakpoint-1.png)
 
@@ -410,7 +414,9 @@ The `shallowEquals` function checks to see if two objects are the same (referenc
 
 Based on this it looks like our bug is the result of the old code relying on a check for reference equality only, and calling `setState()` for the case that the `props` object is changed, even if the values are the same.  Why would that matter? 
 
-Let's add some more debugging info to help us understand.  We know that this is somehow happening when the two ways of checking for equality differ, and we also have some info about the `props`.  But what is going on with the component's state?  Let's dump all of that to the console and find out:
+## Debugging using `console.log()`
+
+Let's add some debug logging to help us understand what's going on in this case.  We know that this is somehow happening when the two ways of checking for equality differ, and we also have some info about the `props`.  But what is going on with the [component's `state`](https://reactjs.org/docs/faq-state.html)?  Let's dump all of that info to the console and find out:
 
 ```ts
 /* Test for the case that the old code and new code differ */
@@ -431,7 +437,7 @@ Rebuilding and running our app now, when we trigger the bug we see this in the c
 
 So the two `props` objects both have a `summary="hello"` but on the `state` we see `summary=""`.  This explains a few things.  First, the bug is really about the `summary` being lost, and we can see that it is indeed set to the empty string.  Second, the `!==` check was allowing calls to `setState()` to happen more often, which would have meant that the `summary` value would have been copied onto the `state`, and the [component re-rendered](https://stackoverflow.com/questions/24718709/reactjs-does-render-get-called-any-time-setstate-is-called) with the expected value.
 
-Looking again at the code in [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx), there are only a few places where the `summary` is set to the empty string outside of the constructor:
+Using [`git grep`](https://git-scm.com/book/en/v2/Git-Tools-Searching), we see that there are only a few places where the `summary` is set to the empty string outside of the constructor in [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx):
 
 ```
 $ git grep -C6 "summary\: ''" app/src/ui/changes/commit-message.tsx
@@ -502,8 +508,6 @@ At this point I'm not sure.  I don't work with React often enough to know all th
 
 I've reached the end of my ability to research this problem alone using only code and tools, and need to reach out to the community and maintainers for advice.  It's possible that my fix will be enough, and they will accept a pull request that reverts this change.  It's also possible that they will use this information to make another fix, possibly reworking the state logic in this component. In either case, I need to [reach out and leave a comment in the bug](https://github.com/desktop/desktop/issues/6390#issuecomment-466818040), and see where that leads.
 
-Regardless of the outcome, we've been able to practice a number of important skills in this walkthrough.  We looked through open issues and found a bug, built the code and debugged it, worked with git to find a regression range, studied changes to the code, and eventually found a possible solution.  Not every bug can be fixed using the same techniques, but this gives you some approaches you can try on your own.
-
-While lots of bugs may be beyond your current knowledge of a codebase, don't get overwhelmed and assume you can't contribute. Many bugs are solvable with enough research and persistence.
+Regardless of the outcome, we've been able to practice a number of important skills in this walkthrough.  We looked through open issues and found a bug, built the code and debugged it, worked with git to find a regression range, used the debugger to understand the code at runtime, and eventually found a possible solution.  Not every bug can be fixed using the same techniques, but this gives you some reusable approaches you can try on your own.
 
 Have fun fixing bugs. There's no shortage of them.
