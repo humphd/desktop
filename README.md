@@ -404,3 +404,100 @@ The `shallowEquals` function checks to see if two objects are the same (referenc
 
 Based on this it looks like our bug is the result of the old code relying on a check for reference equality only, and calling `setState()` for the case that the `props` object is changed, even if the values are the same.  Why would that matter? 
 
+Let's add some more debugging info to help us understand.  We know that this is somehow happening when the two ways of checking for equality differ, and we also have some info about the `props`.  But what is going on with the component's state?  Let's dump all of that to the console and find out:
+
+```ts
+/* Test for the case that the old code and new code differ */
+if ((!shallowEquals(prevProps.commitMessage, this.props.commitMessage)) !==
+  (prevProps.commitMessage !== this.props.commitMessage)) {
+  console.log('[debug] Comparison of props differs:',
+    prevProps.commitMessage,
+    this.props.commitMessage,
+    this.state)
+}
+
+if (!shallowEquals(prevProps.commitMessage, this.props.commitMessage)) {...}
+```
+
+Rebuilding and running our app now, when we trigger the bug we see this in the console:
+
+![Debug Logging](screenshots/debug-logging.png)
+
+So the two `props` objects both have a `summary="hello"` but on the `state` we see `summary=""`.  This explains a few things.  First, the bug is really about the `summary` being lost, and we can see that it is indeed set to the empty string.  Second, the `!==` check was allowing calls to `setState()` to happen more often, which would have meant that the `summary` value would have been copied onto the `state`, and the [component re-rendered](https://stackoverflow.com/questions/24718709/reactjs-does-render-get-called-any-time-setstate-is-called) with the expected value.
+
+Looking again at the code in [`app/src/ui/changes/commit-message.tsx`](app/src/ui/changes/commit-message.tsx), there are only a few places where the `summary` is set to the empty string outside of the constructor:
+
+```
+$ git grep -C6 "summary\: ''" app/src/ui/changes/commit-message.tsx
+app/src/ui/changes/commit-message.tsx-      if (this.props.commitMessage) {
+app/src/ui/changes/commit-message.tsx-        this.setState({
+app/src/ui/changes/commit-message.tsx-          summary: this.props.commitMessage.summary,
+app/src/ui/changes/commit-message.tsx-          description: this.props.commitMessage.description,
+app/src/ui/changes/commit-message.tsx-        })
+app/src/ui/changes/commit-message.tsx-      } else {
+app/src/ui/changes/commit-message.tsx:        this.setState({ summary: '', description: null })
+app/src/ui/changes/commit-message.tsx-      }
+app/src/ui/changes/commit-message.tsx-    }
+app/src/ui/changes/commit-message.tsx-  }
+app/src/ui/changes/commit-message.tsx-
+app/src/ui/changes/commit-message.tsx-  private clearCommitMessage() {
+app/src/ui/changes/commit-message.tsx:    this.setState({ summary: '', description: null })
+app/src/ui/changes/commit-message.tsx-  }
+app/src/ui/changes/commit-message.tsx-
+app/src/ui/changes/commit-message.tsx-  private focusSummary() {
+app/src/ui/changes/commit-message.tsx-    if (this.summaryTextInput !== null) {
+app/src/ui/changes/commit-message.tsx-      this.summaryTextInput.focus()
+app/src/ui/changes/commit-message.tsx-      this.props.dispatcher.setCommitMessageFocus(false)
+```
+
+One is inside the `if` block we've been debugging, and the other is in the `clearCommitMessage` private method.
+This gets called only once, after a commit has successfully been created:
+
+```ts
+private async createCommit() {
+  const { summary, description } = this.state
+
+  if (!this.canCommit()) {
+    return
+  }
+
+  const trailers = this.getCoAuthorTrailers()
+
+  const summaryOrPlaceholder =
+    this.props.singleFileCommit && !this.state.summary
+      ? this.props.placeholder
+      : summary
+
+  const commitContext = {
+    summary: summaryOrPlaceholder,
+    description,
+    trailers,
+  }
+
+  const commitCreated = await this.props.onCreateCommit(commitContext)
+
+  if (commitCreated) {
+    this.clearCommitMessage()
+  }
+}
+```
+
+It seems like the internal state (i.e., `summary`) of the component is getting out of sync with the properties being passed into the component, and in our particular case, the effect is that the `summary` gets lost at the UI level.
+
+## Making a Fix
+
+Now that we have observed and understood the source of the issue, what should our fix be?  My advice would be to begin with the most basic fix you can make.  Get the program working, then worry about improving the quality, performance, etc.  In an open source project like GitHub Desktop, you aren't alone in having to come up with an optimal solution.  Rather, a community works together to solve problems.
+
+The most basic thing we know we could do would be to switch the `if` check back to use `!==` vs. `!shallowEquals()`.  Doing so in our current build has already proven to fix this bug.  But is that correct fix?
+
+At this point I'm not sure.  I don't work with React often enough to know all the ins and outs of a bug like this.  Doing some reading I do notice [discussion of certain anti-patterns related to having components use both `props` and `state`](https://reactjs.org/blog/2018/06/07/you-probably-dont-need-derived-state.html), and maybe this is one of those instances?  It might also be that the real fix to this issue lies in another part of the program, which is feeding these `props` objects into our functions.
+
+## Conclusion
+
+I've reached the end of my ability to research this problem alone using only code and tools, and need to reach out to the community and maintainers for advice.  It's possible that my fix will be enough, and they will accept a pull request that reverts this change.  It's also possible that they will use this information to make another fix, possibly reworking the state logic in this component. In either case, I need to [reach out and leave a comment in the bug](https://github.com/desktop/desktop/issues/6390#issuecomment-466818040), and see where that leads.
+
+Regardless of the outcome, we've been able to practice a number of important skills in this walkthrough.  We looked through open issues and found a bug, built the code and debugged it, worked with git to find a regression range, studied changes to the code, and eventually found a possible solution.  Not every bug can be fixed using the same techniques, but this gives you some approaches you can try on your own.
+
+While lots of bugs may be beyond your current knowledge of a codebase, don't get overwhelmed and assume you can't contribute. Many bugs are solvable with enough research and persistence.
+
+Have fun fixing bugs. There's no shortage of them.
