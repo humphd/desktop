@@ -7,7 +7,7 @@
 ## Overview
 
 The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough designed to help you learn how to solve real bugs in an open source project. It is meant as
-a learning exercise for my open source students at Seneca, or anyone else that is
+a learning exercise for students in my open source courses at Seneca College, or anyone else that is
 interested in getting started fixing bugs in large projects.
 
 Other similar walkthroughs
@@ -31,6 +31,7 @@ Over the past few semesters I've had a number of my open source students fix bug
 >- Identifying and reporting pain points in the application
 >- Bug fixes
 
+It's fantastic to see a project with this approach and level of commitment to engaging with new contributors.
 As a result I decided to base my next open source bug fix walkthrough on GitHub Desktop, in order to help more of my students (and other developers) also get involved in the project.
 
 ## Goals
@@ -502,6 +503,64 @@ Now that we have observed and understood the source of the issue, what should ou
 The most basic thing we know we could do would be to switch the `if` check back to use `!==` vs. `!shallowEquals()`.  Doing so in our current build has already proven to fix this bug.  But is that correct fix?
 
 At this point I'm not sure.  I don't work with React often enough to know all the ins and outs of a bug like this.  Doing some reading I do notice [discussion of certain anti-patterns related to having components use both `props` and `state`](https://reactjs.org/blog/2018/06/07/you-probably-dont-need-derived-state.html), and maybe this is one of those instances?  It might also be that the real fix to this issue lies in another part of the program, which is feeding these `props` objects into our functions.
+
+In my reading I also notice some people discussing the use of React's `componentWillReceiveProps()` to copy values off of `props` and into internal `state`.  Looking around the GitHub Desktop code, I see a few dozen instances of components using `componentWillReceiveProps()` to do this.  Using these as a guide, another possible solution might be this change:
+
+```diff
+diff --git a/app/src/ui/changes/commit-message.tsx b/app/src/ui/changes/commit-message.tsx
+index c930de14d..b7e77f2f9 100644
+--- a/app/src/ui/changes/commit-message.tsx
++++ b/app/src/ui/changes/commit-message.tsx
+@@ -21,7 +21,6 @@ import { showContextualMenu } from '../main-process-proxy'
+ import { Octicon, OcticonSymbol } from '../octicons'
+ import { IAuthor } from '../../models/author'
+ import { IMenuItem } from '../../lib/menu-item'
+-import { shallowEquals } from '../../lib/equality'
+ import { ICommitContext } from '../../models/commit'
+
+ const addAuthorIcon = new OcticonSymbol(
+@@ -122,6 +121,20 @@ export class CommitMessage extends React.Component<
+     this.props.dispatcher.setCommitMessage(this.props.repository, this.state)
+   }
+
++  public componentWillReceiveProps(nextProps: ICommitMessageProps) {
++    const { commitMessage } = nextProps
++    if (!commitMessage) {
++      return
++    }
++
++    if (commitMessage !== this.props.commitMessage) {
++      this.setState({
++        summary: commitMessage.summary,
++        description: commitMessage.description,
++      })
++    }
++  }
++
+   public componentDidUpdate(prevProps: ICommitMessageProps) {
+     if (
+       this.props.autocompletionProviders !== prevProps.autocompletionProviders
+@@ -136,17 +149,6 @@ export class CommitMessage extends React.Component<
+     if (this.props.focusCommitMessage) {
+       this.focusSummary()
+     }
+-
+-    if (!shallowEquals(prevProps.commitMessage, this.props.commitMessage)) {
+-      if (this.props.commitMessage) {
+-        this.setState({
+-          summary: this.props.commitMessage.summary,
+-          description: this.props.commitMessage.description,
+-        })
+-      } else {
+-        this.setState({ summary: '', description: null })
+-      }
+-    }
+   }
+
+   private clearCommitMessage() {
+```
+
+This change also fixes the bug.  But is it the *right* fix?  I need to discuss this with the maintainers, who actually understand this code, and the patterns it uses.
 
 ## Conclusion
 
