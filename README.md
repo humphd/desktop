@@ -6,12 +6,12 @@
 
 ## Overview
 
-The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough of how one might solve a real bug. It is meant as
+The following is a so-called ["good-first-experience"](https://blog.humphd.org/experiments-with-good-first-experience/) walkthrough designed to help you learn how to solve real bugs in an open source project. It is meant as
 a learning exercise for my open source students at Seneca, or anyone else that is
 interested in getting started fixing bugs in large projects.
 
 Other similar walkthroughs
-are available for [Microsoft VSCode](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#walkthrough-fixing-a-bug-in-visual-studio-code) and
+are available for working on bugs in [Microsoft VSCode](https://github.com/humphd/vscode/tree/good-first-experience-issue-42726#walkthrough-fixing-a-bug-in-visual-studio-code) and
 the [Brave desktop web browser](https://github.com/humphd/browser-laptop/tree/good-first-experience-issue-10554#walkthrough-fixing-a-bug-in-the-brave-browser).
 
 ## Introduction
@@ -20,9 +20,9 @@ the [Brave desktop web browser](https://github.com/humphd/browser-laptop/tree/go
 GitHub app. It is written in [TypeScript](http://www.typescriptlang.org) and
 uses [React](https://facebook.github.io/react/).
 
-Over the past few terms, I've had open source students fix bugs in GitHub Desktop, and each time been impressed with how the maintainers treat these new contributors.  I was also impressed with a recent [interview with William Shepherd](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/), one of the GitHub Desktop maintainers: 
+Over the past few semesters I've had a number of my open source students fix bugs in GitHub Desktop, and each time been impressed with how the maintainers have treated these new contributors.  I was also encouraged by a [recent interview](https://github.blog/2019-02-15-maintainer-spotlight-william-shepherd/) with one of the GitHub Desktop maintainers, [William Shepherd](https://github.com/iAmWillShepherd): 
 
-> "My team is always open to receiving contributions. We are looking for kind people who are empathetic and have a collaborative mindset. We are open to all types of contributions, but we are very interested in getting more people from non-technical backgrounds involved. A few of the things that we’d love help with are"
+> "My team is always open to receiving contributions. We are looking for kind people who are empathetic and have a collaborative mindset. We are open to all types of contributions, but we are very interested in getting more people from non-technical backgrounds involved. A few of the things that we’d love help with are:"
 >
 >- Improvements to project documentation
 >- Making the application more accessible
@@ -211,7 +211,7 @@ $ yarn && yarn build:dev && yarn start
 ...
 ```
 
-<div><details>
+<p><details>
 <summary>If you're interested in the full log, a slightly annotated version of the entire process is available here.</summary>
 <pre>
 Bisecting: 318 revisions left to test after this (roughly 8 steps)
@@ -262,7 +262,7 @@ Date:   Wed Oct 31 09:32:08 2018 -0700
 
 :040000 040000 a48c9be60a35ddd83f7783fdfdd024139631ea9b f49d66e116a9a59162d89f865c6086895bc2cc0a M	app
 </pre>
-</details></div>
+</details></p>
 
 In the end, the process took 10 steps and ended on commit [6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61](https://github.com/desktop/desktop/commit/6b9ca6cb7cdc12d6bdda4285874c1d4d813c3e61) from Oct 31, 2018.
 
